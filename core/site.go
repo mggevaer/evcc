@@ -120,8 +120,7 @@ type Site struct {
 	suggestionsUpdated       time.Time                   // time the suggestions were applied
 	suggestionActions        map[string]string           // last notified actionable optimizer action by device key
 
-	optimizerMu      sync.Mutex // guards optimizer runs
-	optimizerUpdated time.Time  // last optimizer run, guarded by optimizerMu
+	optimizerMu sync.Mutex // guards optimizer runs
 }
 
 // MetersConfig contains the site's meter configuration
@@ -1001,13 +1000,7 @@ func (site *Site) updateMeters() error {
 
 	eg.Go(site.updateGridMeter)
 
-	if err := eg.Wait(); err != nil {
-		return err
-	}
-
-	go site.optimizerUpdateAsync(tariff.SlotDuration)
-
-	return nil
+	return eg.Wait()
 }
 
 func optimizerEnabled() bool {
@@ -1394,6 +1387,9 @@ func (site *Site) loopLoadpoints(next chan<- updater) {
 	active := site.activeLoadpoints()
 
 	for {
+		// one optimizer run per loadpoint cycle
+		go site.optimizerUpdateAsync()
+
 		if len(active) == 0 {
 			logOnce.Do(func() {
 				site.log.INFO.Println("no loadpoints configured, running in meter-only mode")
