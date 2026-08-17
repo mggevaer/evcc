@@ -3,7 +3,6 @@ package charger
 import (
 	"context"
 	"net"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -218,7 +217,7 @@ func TestAlpitronicIdentify(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, id)
 
-	// vehicle id takes precedence over the tag
+	// tag takes precedence over the vehicle id
 	regs := hycRegs(1, hycStateCharging)
 	regs[hycReg(1, hycRegVID)+1] = 0xAABB
 	regs[hycReg(1, hycRegVID)+2] = 0xCCDD
@@ -229,17 +228,19 @@ func TestAlpitronicIdentify(t *testing.T) {
 
 	id, err = wb.Identify()
 	require.NoError(t, err)
-	assert.Equal(t, "0000aabbccddeeff", id)
+	assert.Equal(t, "ab", id)
 
-	// tag as fallback
+	// vehicle id as fallback
 	regs = hycRegs(1, hycStateCharging)
-	regs[hycReg(1, hycRegIdTag)] = 0x4142
+	regs[hycReg(1, hycRegVID)+1] = 0xAABB
+	regs[hycReg(1, hycRegVID)+2] = 0xCCDD
+	regs[hycReg(1, hycRegVID)+3] = 0xEEFF
 
 	wb, _ = hycTestCharger(t, 1, regs)
 
 	id, err = wb.Identify()
 	require.NoError(t, err)
-	assert.Equal(t, "4142"+strings.Repeat("0", 36), id)
+	assert.Equal(t, "0000aabbccddeeff", id)
 }
 
 func TestAlpitronicEnable(t *testing.T) {

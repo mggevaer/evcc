@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/evcc-io/evcc/api"
@@ -373,12 +374,12 @@ func (wb *AlpitronicHYC) Identify() (string, error) {
 		return "", err
 	}
 
-	if vid := hycInput(b, hycRegVID, 8); !allZero(vid) {
-		return hex.EncodeToString(vid), nil
+	if idTag := hycInput(b, hycRegIdTag, 20); !allZero(idTag) {
+		return strings.ToLower(strings.TrimRight(string(idTag), "\x00")), nil
 	}
 
-	if idTag := hycInput(b, hycRegIdTag, 20); !allZero(idTag) {
-		return hex.EncodeToString(idTag), nil
+	if vid := hycInput(b, hycRegVID, 8); !allZero(vid) {
+		return hex.EncodeToString(vid), nil
 	}
 
 	return "", nil
